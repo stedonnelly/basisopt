@@ -207,6 +207,35 @@ class Molecule(MSONable):
             self.dummy_atoms.extend(valid_atoms)
         self.dummy_atoms = list(set(self.dummy_atoms))
 
+    def get_legendre_params(self, element: str = None):
+        """Returns the legendre coefficients from the basis set where available.
+        By default returns all elements in the basis set unless specified.
+
+
+        Parameters
+        ----------
+        element : str, optional
+            Specific element from basis set. The default is None.
+
+        Returns
+        -------
+        dict
+            Dictionary of elements containing a dictionary for each angular
+            momentum's legendre coefficients.
+
+        """
+        if element:
+            return {shell.l: shell.leg_params for shell in self.basis[element]}
+        else:
+            return {
+                element: {
+                    shell.l: shell.leg_params[0].tolist()
+                    for shell in self.basis[element]
+                    if shell.leg_params
+                }
+                for element in self.basis.keys()
+            }
+
     def distance(self, atom1: int, atom2: int) -> float:
         """Computes the Euclidean distance between two atoms.
         No bounds checking.
