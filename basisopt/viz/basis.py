@@ -127,3 +127,27 @@ def plot_exponents(
         _single_plot(bas, ax)
 
     return fig, axes
+
+def compare_exponents(
+    basis_sets: list,
+    atoms: list[str] = [],
+    split_by_shell: bool = True,
+    log_scale: bool = True,
+    figsize: tuple[float, float] = (9, 9),
+) -> tuple[object, list[object]]:
+    """Creates event plots to visualize exponents in a basis set.
+
+    Arguments:
+            basis1 (dict): internal basis object
+            basis2 (dict): internal basis object
+            atoms (list): list of atoms to plot for
+            split_by_shell (bool): if True, the event plots will be
+               split by shell, with a different plot for each atom
+            log_scale (bool): if True, exponents will be in log_10
+            figsize (tuple): (width, heigh) in inches of the figure
+
+    Returns:
+            matplotlib figure, [list of matplotlib axes]
+    """
+    natoms = len(atoms)
+    

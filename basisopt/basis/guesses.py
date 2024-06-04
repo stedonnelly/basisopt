@@ -46,36 +46,37 @@ def log_normal_guess(atomic, params={'mean': 0.0, 'sigma': 1.0}):
     return basis
 
 
-def legendre_guess(atomic, params):
+def legendre_guess(atomic, params=None):
     if not params:
-        leg_params = data.get_legendre_params(atom=atomic._symbol.title())
-        if leg_params:
-            _INITIAL_GUESS = leg_params
-            shells = leg_params
-        else:
-            _INITIAL_GUESS = ((3.5, 5.0, 0.8, 0.3, 0.1, 0.1), 6)
-            l_list = [l for (n, l) in atomic.element.ec.conf.keys()]
-            max_l = len(set(l_list))
-            shells = [_INITIAL_GUESS] * max_l
-        return legendre_expansion(shells)
-    elif 'initial_guess' in params:
-        return legendre_expansion(params['initial_guess'])
-    elif 'name' in params.keys():
+        _INITIAL_GUESS = ((3.5, 5.0, 0.8, 0.3, 0.1, 0.1), 6)
         l_list = [l for (n, l) in atomic.element.ec.conf.keys()]
-        ref_basis = fetch_basis(params['name'], atomic._symbol)
         max_l = len(set(l_list))
-        lengths = [len(shell.exps) for shell in ref_basis[atomic._symbol]]
-        try:
+        shells = [_INITIAL_GUESS] * max_l
+        return legendre_expansion(shells)
+    else:
+        if 'exponents' in params:
+            shells = []
+            A_vals = data.get_legendre_params(atom=atomic._symbol.title())
+            shells = list(zip(A_vals, params['exponents']))
+            return legendre_expansion(shells)
+        elif 'name' in params:
+            ref_basis = fetch_basis(params['name'], atomic._symbol)
+            lengths = [len(shell.exps) for shell in ref_basis[atomic._symbol]]
             database_values = data.get_legendre_params(atom=atomic._symbol.title())
             for i, shell in enumerate(database_values):
                 shell = list(shell)
                 if len(shell[0]) >= lengths[i]:
-                    shell[0] = tuple(list(shell[0])[: lengths[i]])
-                shell[1] = lengths[i]
+                    shell = tuple(list(shell[0])[: lengths[i]])
+                shell = lengths[i]
                 database_values[i] = tuple(shell)
 
-        except:
+            return legendre_expansion(database_values)
+        elif 'initial_guess' in params:
+            return legendre_expansion(params['initial_guess'])
+        else:
             _INITIAL_GUESS = ((3.5, 5.0, 0.8, 0.3, 0.1, 0.1), 6)
+            l_list = [l for (n, l) in atomic.element.ec.conf.keys()]
+            max_l = len(set(l_list))
             shells = [_INITIAL_GUESS] * max_l
             for i, shell in enumerate(_INITIAL_GUESS):
                 shell = list(shell)
@@ -83,11 +84,51 @@ def legendre_guess(atomic, params):
                     shell[0] = tuple(list(shell[0])[: lengths[i]])
                 shell[1] = lengths[i]
                 _INITIAL_GUESS[i] = tuple(shell)
-        return legendre_expansion(database_values)
-    else:
-        _INITIAL_GUESS = params
-        shells = [_INITIAL_GUESS]
-        return legendre_expansion(shells)
+            return legendre_expansion(database_values)
+
+
+# def legendre_guess(atomic, params=None):
+#     if not params:
+#         leg_params = data.get_legendre_params(atom=atomic._symbol.title())
+#         if leg_params:
+#             _INITIAL_GUESS = leg_params
+#             shells = leg_params
+#         else:
+#             _INITIAL_GUESS = ((3.5, 5.0, 0.8, 0.3, 0.1, 0.1), 6)
+#             l_list = [l for (n, l) in atomic.element.ec.conf.keys()]
+#             max_l = len(set(l_list))
+#             shells = [_INITIAL_GUESS] * max_l
+#         return legendre_expansion(shells)
+#     elif 'initial_guess' in params:
+#         return legendre_expansion(params['initial_guess'])
+#     elif 'name' in params.keys():
+#         l_list = [l for (n, l) in atomic.element.ec.conf.keys()]
+#         ref_basis = fetch_basis(params['name'], atomic._symbol)
+#         max_l = len(set(l_list))
+#         lengths = [len(shell.exps) for shell in ref_basis[atomic._symbol]]
+#         try:
+#             database_values = data.get_legendre_params(atom=atomic._symbol.title())
+#             for i, shell in enumerate(database_values):
+#                 shell = list(shell)
+#                 if len(shell[0]) >= lengths[i]:
+#                     shell[0] = tuple(list(shell[0])[: lengths[i]])
+#                 shell[1] = lengths[i]
+#                 database_values[i] = tuple(shell)
+
+#         except:
+#             _INITIAL_GUESS = ((3.5, 5.0, 0.8, 0.3, 0.1, 0.1), 6)
+#             shells = [_INITIAL_GUESS] * max_l
+#             for i, shell in enumerate(_INITIAL_GUESS):
+#                 shell = list(shell)
+#                 if len(shell[0]) >= lengths[i]:
+#                     shell[0] = tuple(list(shell[0])[: lengths[i]])
+#                 shell[1] = lengths[i]
+#                 _INITIAL_GUESS[i] = tuple(shell)
+#         return legendre_expansion(database_values)
+#     else:
+#         _INITIAL_GUESS = params
+#         shells = [_INITIAL_GUESS]
+#         return legendre_expansion(shells)
 
 
 def load_guess(atomic, params):

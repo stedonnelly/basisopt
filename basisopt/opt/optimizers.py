@@ -307,7 +307,7 @@ def collective_minimize(
 
             strategy.initialise(basis, el)
             res = _atomic_opt(basis, el, alg, strategy, params, objective)
-            total += strategy.last_objective
+            total = strategy.last_objective
             results[f"pass{i}_opt{ctr}"] = res
             ctr += 1
         bo_logger.info("Collective objective: %f", total)
