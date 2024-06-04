@@ -128,6 +128,7 @@ def plot_exponents(
 
     return fig, axes
 
+
 def compare_exponents(
     basis_sets: list,
     atoms: list[str] = [],
@@ -150,4 +151,3 @@ def compare_exponents(
             matplotlib figure, [list of matplotlib axes]
     """
     natoms = len(atoms)
-    

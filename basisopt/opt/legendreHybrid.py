@@ -19,12 +19,10 @@ from typing import Any
 import numpy as np
 from mendeleev import element as md_element
 
-from basisopt import data
+from basisopt import bo_logger, data
 from basisopt.basis.basis import legendre_expansion
 from basisopt.basis.guesses import bse_guess, legendre_guess, load_guess, null_guess
 from basisopt.containers import InternalBasis
-
-from basisopt import bo_logger
 
 from .preconditioners import unit
 from .strategies import Strategy
@@ -169,7 +167,9 @@ class LegendrePairsHybrid(Strategy):
                 abs(self.shells[self._step][0][0]), **self.pre.params
             )
         else:
-            basis[element][self._step] = legendre_expansion(self.shells[self._step], l=self._step)[0]
+            basis[element][self._step] = legendre_expansion(self.shells[self._step], l=self._step)[
+                0
+            ]
         # print(self.shells[self._step][0][0])
         # print(basis[element][self._step].exps)
 
@@ -188,7 +188,9 @@ class LegendrePairsHybrid(Strategy):
             try:
                 self._INITIAL_Guess = self.guess_params['initial_guess']
             except Exception as e:
-                bo_logger.info("No initial guess provided, checking database for %s", element.upper())
+                bo_logger.info(
+                    "No initial guess provided, checking database for %s", element.upper()
+                )
                 bo_logger.error(e)
                 try:
                     self._database_guesses = data.get_legendre_params(atom=element.upper())
@@ -196,7 +198,9 @@ class LegendrePairsHybrid(Strategy):
                     bo_logger.warning(self._database_guesses)
                     for idx, shell in enumerate(basis[element.lower()]):
                         if len(shell.exps) > self.n_exp_cutoff:
-                            self._INITIAL_Guess.append([(self._database_guesses[idx], len(shell.exps))])
+                            self._INITIAL_Guess.append(
+                                [(self._database_guesses[idx], len(shell.exps))]
+                            )
                         else:
                             self._INITIAL_Guess.append([(shell.exps, len(shell.exps))])
                 except Exception as e:
