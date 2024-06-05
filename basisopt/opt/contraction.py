@@ -4,7 +4,7 @@ import numpy as np
 from mendeleev import element as md_element
 
 from basisopt import bo_logger
-from basisopt.basis.basis import legendre_expansion, contract_function, contract_basis
+from basisopt.basis.basis import contract_basis, contract_function, legendre_expansion
 from basisopt.basis.guesses import null_guess
 from basisopt.containers import InternalBasis
 
