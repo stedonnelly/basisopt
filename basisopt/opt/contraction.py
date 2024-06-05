@@ -117,7 +117,7 @@ class ContractionStrategy(Strategy):
     def set_basis_contractions(self, basis, contractions):
         """Sets the initial guess for the contraction coefficients"""
         contract_basis(basis, contractions)
-    
+
     def set_basis_shells(self, basis: InternalBasis, element: str, values: np.ndarray):
         """Expands parameters into a basis set
 
@@ -138,15 +138,17 @@ class ContractionStrategy(Strategy):
         """
 
         try:
-            #self.contractions =
-            self.guess_params['initial_guess'] = {key.lower(): value for key, value in self.guess_params['initial_guess'].items()}
+            # self.contractions =
+            self.guess_params['initial_guess'] = {
+                key.lower(): value for key, value in self.guess_params['initial_guess'].items()
+            }
             self.contractions = self.guess_params['initial_guess'][element]
         except Exception as e:
             bo_logger.error(
                 "Initial guess not set, please set the attribute .guess_params['initial_guess']"
             )
             raise ValueError("Initial guess not set")
-        
+
         if not self.number_of_contractions:
             bo_logger.error(
                 "Number of contractions not set, please set the attribute .number_of_contractions"
@@ -156,7 +158,7 @@ class ContractionStrategy(Strategy):
         if self.max_l < 0:
             el = md_element(element.title())
         l_list = [l for (n, l) in el.ec.conf.keys()]
-        #n_list = [max(n for n, l in el.ec.conf.keys() if l == orb) for orb in ['s', 'p', 'd', 'f']]
+        # n_list = [max(n for n, l in el.ec.conf.keys() if l == orb) for orb in ['s', 'p', 'd', 'f']]
         min_l = len(set(l_list))
 
         self.max_l = max(min_l, self.max_l)
@@ -165,7 +167,7 @@ class ContractionStrategy(Strategy):
         self._n_step = 0  # Sets the active contraction function within the shell
 
         self.shells = self.contractions
-        
+
         # self.contractions = [
         #     [
         #         np.array([1.0 for _ in range(shell.exps.size)])
@@ -177,8 +179,8 @@ class ContractionStrategy(Strategy):
         self.sub_shells_done = [
             [1] * n_func for n_func in self.number_of_contractions
         ]  # Number of contraction functions per shell
- 
-        #self.set_basis_shells(basis, element, contractions=self.contractions)
+
+        # self.set_basis_shells(basis, element, contractions=self.contractions)
         self.set_basis_contractions(basis, {element: self.contractions})
         self.last_objective = 0.0
         self.delta_objective = 0.0
@@ -190,11 +192,11 @@ class ContractionStrategy(Strategy):
 
         carry_on = True
         # coefficients = self.shells[self._step][self._n_step]
-        
+
         if self.first_run:
             self.first_run = False
             return carry_on
-        if self._n_step == self.number_of_contractions[self._step]-1:
+        if self._n_step == self.number_of_contractions[self._step] - 1:
             self._n_step = 0
             self._step += 1
             if self._step == len(basis[element]):
@@ -205,9 +207,9 @@ class ContractionStrategy(Strategy):
             self.sub_shells_done[self._step][self._n_step] = 0
             self._n_step += 1
             return carry_on
-        
+
         maxl = len(basis[element])
-        #carry_on = np.sum(self.shell_done) != 0
+        # carry_on = np.sum(self.shell_done) != 0
         carry_on = maxl != self._step
-        #return carry_on
+        # return carry_on
         return maxl != self._step
