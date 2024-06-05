@@ -54,7 +54,7 @@ def contract_shell(shell: Shell, contractions: list[np.ndarray]):
     shell.coefs = contractions
 
 
-def contract_basis(basis: InternalBasis, contractions: Dict) -> InternalBasis:
+def contract_basis(basis: InternalBasis, contractions: dict):
     """Contracts all shells in a basis for the elements specified
     (Overwrites the old basis).
 
@@ -68,6 +68,24 @@ def contract_basis(basis: InternalBasis, contractions: Dict) -> InternalBasis:
     for el in elements:
         for idx, shell in enumerate(basis[el.lower()]):
             contract_shell(shell, contractions[el][idx])
+
+
+def contract_function(
+    basis: InternalBasis, element: str, l: int, func: int, contractions: np.ndarray
+):
+    """Contracts a single function in a shell for the element specified
+    (Overwrites the existing function contraction coefs)
+    """
+    shell = basis[element.lower()][l]
+    shell.coefs[func] = contractions
+
+
+def contract_element(basis: InternalBasis, element: str, l: int, contractions: list[np.ndarray]):
+    """Contracts all shells in a basis for the elements specified
+    (Overwrites the existing elements contraction coefs)
+    """
+    shell = basis[element.lower()][l]
+    contract_shell(shell, contractions)
 
 
 def even_temper_expansion(params: ETParams) -> list[Shell]:
