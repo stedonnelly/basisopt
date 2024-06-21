@@ -109,7 +109,7 @@ def even_temper_expansion(params: ETParams) -> list[Shell]:
     return el_basis
 
 
-def legendre_expansion(params: LegParams, l=0) -> list[Shell]:
+def legendre_expansion(params: LegParams, l=0, contractions=None) -> list[Shell]:
     """Forms a basis for an element from Petersson's Legendre expansion
 
     Arguments:
@@ -139,7 +139,10 @@ def legendre_expansion(params: LegParams, l=0) -> list[Shell]:
             exponents.append(np.exp(ln_a))
         new_shell.exps = np.array(exponents)
         new_shell.leg_params = (np.array(A_vals), n)
-        uncontract_shell(new_shell)
+        if contractions:
+            new_shell.coefs = contractions
+        else:
+            uncontract_shell(new_shell)
         el_basis.append(new_shell)
     return el_basis
 

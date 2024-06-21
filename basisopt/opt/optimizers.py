@@ -9,15 +9,15 @@ from basisopt.exceptions import FailedCalculation
 from basisopt.molecule import Molecule
 from basisopt.util import bo_logger
 
+from . import Strategy
 from .regularisers import Regulariser
-from .strategies import Strategy
 
 
 def _atomic_opt(
     basis: InternalBasis,
     element: str,
     algorithm: str,
-    strategy: Strategy,
+    strategy,
     opt_params: dict[str, Any],
     objective: Callable[[np.ndarray], float],
 ) -> OptResult:
