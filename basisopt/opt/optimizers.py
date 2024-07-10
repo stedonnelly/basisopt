@@ -7,7 +7,7 @@ from basisopt import api
 from basisopt.containers import InternalBasis, OptCollection, OptResult
 from basisopt.exceptions import FailedCalculation
 from basisopt.molecule import Molecule
-from basisopt.opt.contraction_v2 import ContractionStrategy
+from basisopt.opt.contraction import ContractionStrategy
 from basisopt.util import bo_logger
 
 from . import Strategy
