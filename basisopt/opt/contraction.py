@@ -137,26 +137,7 @@ class ContractionStrategy(Strategy):
                element (str): the atom type of interest
         """
 
-        try:
-            # self.contractions =
-            self.guess_params['initial_guess'] = {
-                key.lower(): value for key, value in self.guess_params['initial_guess'].items()
-            }
-            self.contractions = self.guess_params['initial_guess'][element]
-        except Exception as e:
-            bo_logger.error(
-                "Initial guess not set, please set the attribute .guess_params['initial_guess']"
-            )
-            raise ValueError("Initial guess not set")
-
-        if not self.number_of_contractions:
-            bo_logger.error(
-                "Number of contractions not set, please set the attribute .number_of_contractions"
-            )
-            raise ValueError("Number of contractions not set")
-
-        if self.max_l < 0:
-            el = md_element(element.title())
+        el = md_element(element.title())
         l_list = [l for (n, l) in el.ec.conf.keys()]
         # n_list = [max(n for n, l in el.ec.conf.keys() if l == orb) for orb in ['s', 'p', 'd', 'f']]
         min_l = len(set(l_list))
@@ -166,28 +147,23 @@ class ContractionStrategy(Strategy):
         self._step = 0  # Selects current shell
         self._n_step = 0  # Sets the active contraction function within the shell
 
-        self.shells = self.contractions
+        if 'initial_guess' not in self.guess_params or self.guess_params['initial_guess'] is None:
+            self.shells = [
+                basis[element.lower()][idx].coefs for idx in range(len(basis[element.lower()]))
+            ]
+        elif self.guess_params['initial_guess']:
+            self.shells = self.guess_params['initial_guess']
 
-        # self.contractions = [
-        #     [
-        #         np.array([1.0 for _ in range(shell.exps.size)])
-        #         for _ in range(self.number_of_contractions[idx])
-        #     ]
-        #     for idx, shell in enumerate(basis[element.lower()])
-        # ]  # Initial guess for contractions
+        self.number_of_contractions = [len(shell.coefs) for shell in basis[element.lower()]]
 
-        self.sub_shells_done = [
-            [1] * n_func for n_func in self.number_of_contractions
-        ]  # Number of contraction functions per shell
+        self.sub_shells_done = [[1] * n_func for n_func in self.number_of_contractions]
 
-        # self.set_basis_shells(basis, element, contractions=self.contractions)
-        self.set_basis_contractions(basis, {element: self.contractions})
         self.last_objective = 0.0
         self.delta_objective = 0.0
         self.first_run = True
 
     def next(self, basis: InternalBasis, element: str, objective: float) -> bool:
-        self.delta_objective = np.abs(self.last_objective - objective)
+        self.delta_objective = np.abs(objective - self.last_objective)
         self.last_objective = objective
 
         carry_on = True
@@ -196,16 +172,22 @@ class ContractionStrategy(Strategy):
         if self.first_run:
             self.first_run = False
             return carry_on
-        if self._n_step == self.number_of_contractions[self._step] - 1:
-            self._n_step = 0
-            self._step += 1
-            if self._step == len(basis[element]):
-                return False
-            else:
-                return carry_on
+        # if self._n_step == self.number_of_contractions[self._step] - 1:
+        #     if self.delta_objective < self.target:
+        #         self._n_step = 0
+        #         self._step += 1
+        #         return carry_on
+        #     else:
+        #         return carry_on
         elif self.delta_objective < self.target:
             self.sub_shells_done[self._step][self._n_step] = 0
-            self._n_step += 1
+            if self._n_step == self.number_of_contractions[self._step] - 1:
+                self._n_step = 0
+                self._step += 1
+                if self._step == len(basis[element]):
+                    return False
+            else:
+                self._n_step += 1
             return carry_on
 
         maxl = len(basis[element])
