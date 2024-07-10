@@ -1,4 +1,5 @@
 # flake8: noqa
+from .strategies import Strategy
 from .optimizers import (
     collective_minimize,
     collective_optimize,
@@ -6,4 +7,3 @@ from .optimizers import (
     minimizer,
     optimize,
 )
-from .strategies import Strategy
