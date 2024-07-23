@@ -1,28 +1,13 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Mar 11 11:54:47 2024
-
-@author: shaun
-"""
-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Feb  2 13:09:55 2024
-
-@author: shaun
-"""
-
 from typing import Any
 
 import numpy as np
 from mendeleev import element as md_element
 
-from basisopt import data
 from basisopt.basis.basis import legendre_expansion
-from basisopt.basis.guesses import bse_guess, legendre_guess, load_guess, null_guess
+from basisopt.basis.guesses import legendre_guess
 from basisopt.containers import InternalBasis
+from basisopt.data import get_legendre_params
+from basisopt.util import bo_logger
 
 from .preconditioners import unit
 from .strategies import Strategy
@@ -86,7 +71,7 @@ class LegendrePairsHybrid(Strategy):
         self.shell = []
         self.shell_done = []
         self.target = target
-        self.guess = null_guess
+        self.guess = None
         self.guess_params = {}
         self.params = {}
         self.max_n = max_n
@@ -97,6 +82,7 @@ class LegendrePairsHybrid(Strategy):
         self.force_pass = False
         self._just_added = False
         self.initialised = None
+        self.ignore_database = False
 
     def as_dict(self) -> dict[str, Any]:
         """Returns MSONable dictionary of object"""
@@ -135,7 +121,7 @@ class LegendrePairsHybrid(Strategy):
         (A_vals, n) = self.shells[self._step][0]
         if self._just_added:
             # self._just_added = False
-            if n < self.n_exp_cutoff:
+            if n <= self.n_exp_cutoff:
                 return np.array(A_vals)
             else:
                 return np.array(A_vals)[-2:]
@@ -145,7 +131,7 @@ class LegendrePairsHybrid(Strategy):
     def set_active(self, values: np.ndarray, basis: InternalBasis, element: str):
         """Given the Legendre params for a shell, expands the basis"""
         (A_vals, n) = self.shells[self._step][0]
-        if n < self.n_exp_cutoff:
+        if n <= self.n_exp_cutoff:
             self.shells[self._step][0] = (values, n)
         else:
             if self._just_added:
@@ -162,19 +148,19 @@ class LegendrePairsHybrid(Strategy):
              basis (InternalBasis): the basis set to expand
              element (str): the atom type
         """
-        if self.shells[self._step][0][1] < self.n_exp_cutoff:
+        if self.shells[self._step][0][1] <= self.n_exp_cutoff:
             basis[element][self._step].exps = self.pre.inverse(
                 abs(self.shells[self._step][0][0]), **self.pre.params
             )
         else:
-            basis[element][self._step] = legendre_expansion(self.shells[self._step], l=self._step)[
-                0
-            ]
+            basis[element][self._step] = legendre_expansion(
+                self.shells[self._step], l=self._step, contractions=basis[element][self._step].coefs
+            )[0]
         # print(self.shells[self._step][0][0])
         # print(basis[element][self._step].exps)
 
     def initialise(self, basis: InternalBasis, element: str):
-        el = md_element(element.title())
+        # el = md_element(element.title())
         self._step = 0
         if not self.initialised:
             self.initialised = {element: False for element, _ in basis.items()}
@@ -184,30 +170,50 @@ class LegendrePairsHybrid(Strategy):
         self.first_run = True
         if not self.initialised[element]:
             # TODO: Make it so that a custom n can be set here
+            self._INITIAL_Guess = []
             try:
                 self._INITIAL_Guess = self.guess_params['initial_guess']
-            except:
-                self._INITIAL_Guess = []
-                for shell in basis[element.lower()]:
-                    if len(shell.exps) < self.n_exp_cutoff:
-                        self._INITIAL_Guess.append([(shell.exps, len(shell.exps))])
-                    else:
-                        self._INITIAL_Guess.append(
-                            [
-                                (
-                                    np.array([2.0 if i % 2 == 0 else -2.0 for i in range(2)]),
-                                    len(shell.exps),
-                                )
-                            ]
-                        )
-                # self._INITIAL_Guess = [[(np.array([.5 if i % 2 == 0 else -1. for i in range(2)]),len(shell.exps))] for shell in basis[element.lower()]]
+            except Exception as e:
+                bo_logger.info(
+                    "No initial guess provided, checking database for %s", element.upper()
+                )
+                bo_logger.error(e)
+                try:
+                    if self.ignore_database:
+                        raise Exception("Ignoring database")
+                    self._database_guesses = get_legendre_params(atom=element.upper())
+                    length = len(basis[element.lower()])
+                    bo_logger.warning(self._database_guesses)
+                    for idx, shell in enumerate(basis[element.lower()]):
+                        if len(shell.exps) > self.n_exp_cutoff:
+                            self._INITIAL_Guess.append(
+                                [(self._database_guesses[idx], len(shell.exps))]
+                            )
+                        else:
+                            self._INITIAL_Guess.append([(shell.exps, len(shell.exps))])
+                except Exception as e:
+                    bo_logger.info("No initial guess found in database, using default")
+                    bo_logger.error(e)
+                    for shell in basis[element.lower()]:
+                        if len(shell.exps) <= self.n_exp_cutoff:
+                            self._INITIAL_Guess.append([(shell.exps, len(shell.exps))])
+                        else:
+                            self._INITIAL_Guess.append(
+                                [
+                                    (
+                                        np.array([2.0 if i % 2 == 0 else -2.0 for i in range(2)]),
+                                        len(shell.exps),
+                                    )
+                                ]
+                            )
+                    # self._INITIAL_Guess = [[(np.array([.5 if i % 2 == 0 else -1. for i in range(2)]),len(shell.exps))] for shell in basis[element.lower()]]
             self.shells = self._INITIAL_Guess
             self.initialised[element] = True
         else:
             self.shells = [
                 (
                     [(shell.exps, len(shell.exps))]
-                    if len(shell.exps) < self.n_exp_cutoff
+                    if len(shell.exps) <= self.n_exp_cutoff
                     else [shell.leg_params]
                 )
                 for shell in basis[element]
@@ -225,7 +231,7 @@ class LegendrePairsHybrid(Strategy):
             max_n_a = self.max_n_a[self._step]
         else:
             max_n_a = self.max_n_a
-        if n < self.n_exp_cutoff:
+        if n <= self.n_exp_cutoff:
             if self.first_run:
                 self.first_run = False
                 A_vals = basis[element][self._step].exps
